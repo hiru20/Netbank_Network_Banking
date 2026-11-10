@@ -1,8 +1,5 @@
 # NetBank — Multi-Client Network Banking System
 
-**Module:** EC5205 – Operating Systems & Network Programming (Semester 5)  
-**University of Ruhuna — Faculty of Engineering**
-
 ---
 
 ## Project Folder Separation (Server vs. Client)
