@@ -1,0 +1,14 @@
+# Compiled Java classes
+NetBank_Server/bin/
+NetBank_Client/bin/
+bin/
+
+# Runtime SQLite database files
+NetBank_Server/data/*.sqlite
+NetBank_Server/data/*.db
+data/
+
+# IDE metadata
+.settings/
+.vscode/
+.idea/
