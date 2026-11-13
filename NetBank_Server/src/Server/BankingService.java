@@ -26,8 +26,11 @@ public class BankingService {
 		if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
 			return "ERROR|INVALID_FIELDS|Username and password are required";
 		}
-		if (initialBalance < 0) {
+		if (Double.isNaN(initialBalance) || Double.isInfinite(initialBalance) || initialBalance < 0) {
 			return "ERROR|INVALID_AMOUNT|Initial balance cannot be negative";
+		}
+		if (accountType == null || accountType.trim().isEmpty()) {
+			return "ERROR|INVALID_FIELDS|Account type is required";
 		}
 
 		synchronized (REGISTRATION_LOCK) {
@@ -189,7 +192,7 @@ public class BankingService {
 	}
 
 	public static String deposit(String accountNumber, double amount) {
-		if (amount <= 0) {
+		if (Double.isNaN(amount) || Double.isInfinite(amount) || amount <= 0) {
 			return "ERROR|INVALID_AMOUNT|Deposit amount must be positive";
 		}
 
@@ -241,7 +244,7 @@ public class BankingService {
 	}
 
 	public static String withdraw(String accountNumber, double amount) {
-		if (amount <= 0) {
+		if (Double.isNaN(amount) || Double.isInfinite(amount) || amount <= 0) {
 			return "ERROR|INVALID_AMOUNT|Withdrawal amount must be positive";
 		}
 
@@ -302,7 +305,7 @@ public class BankingService {
 	 * Client A transfers to Client B while Client B transfers to Client A concurrently).
 	 */
 	public static String transfer(String fromAccount, String toAccount, double amount) {
-		if (amount <= 0) {
+		if (Double.isNaN(amount) || Double.isInfinite(amount) || amount <= 0) {
 			return "ERROR|INVALID_AMOUNT|Transfer amount must be positive";
 		}
 		String cleanFrom = fromAccount.trim();
