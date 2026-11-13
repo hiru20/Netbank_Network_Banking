@@ -37,8 +37,10 @@ public class BankClient {
 			ipAddress = InetAddress.getByName(hostInput);
 		}
 
-		// Creating Client Socket
+		// Creating Client Socket with TCP_NODELAY for low-latency Wi-Fi communication
 		Socket socket = new Socket(ipAddress, PORT);
+		socket.setTcpNoDelay(true);
+		socket.setKeepAlive(true);
 		System.out.println("Server is connected....\n");
 
 		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);

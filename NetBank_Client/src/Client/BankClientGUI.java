@@ -248,6 +248,8 @@ public class BankClientGUI extends JFrame {
 		try {
 			InetAddress ipAddress = InetAddress.getByName(serverIpField.getText().trim());
 			socket = new Socket(ipAddress, PORT);
+			socket.setTcpNoDelay(true);
+			socket.setKeepAlive(true);
 			out = new PrintWriter(socket.getOutputStream(), true);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
