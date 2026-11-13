@@ -16,8 +16,11 @@ public class BankingService {
 		if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
 			return "ERROR|INVALID_FIELDS|Username and password are required";
 		}
-		if (initialBalance < 0) {
+		if (Double.isNaN(initialBalance) || Double.isInfinite(initialBalance) || initialBalance < 0) {
 			return "ERROR|INVALID_AMOUNT|Initial balance cannot be negative";
+		}
+		if (accountType == null || accountType.trim().isEmpty()) {
+			return "ERROR|INVALID_FIELDS|Account type is required";
 		}
 
 		try (Connection conn = DatabaseManager.getConnection()) {
@@ -168,7 +171,7 @@ public class BankingService {
 	}
 
 	public static synchronized String deposit(String accountNumber, double amount) {
-		if (amount <= 0) {
+		if (Double.isNaN(amount) || Double.isInfinite(amount) || amount <= 0) {
 			return "ERROR|INVALID_AMOUNT|Deposit amount must be positive";
 		}
 
@@ -216,7 +219,7 @@ public class BankingService {
 	}
 
 	public static synchronized String withdraw(String accountNumber, double amount) {
-		if (amount <= 0) {
+		if (Double.isNaN(amount) || Double.isInfinite(amount) || amount <= 0) {
 			return "ERROR|INVALID_AMOUNT|Withdrawal amount must be positive";
 		}
 
@@ -269,7 +272,7 @@ public class BankingService {
 	}
 
 	public static synchronized String transfer(String fromAccount, String toAccount, double amount) {
-		if (amount <= 0) {
+		if (Double.isNaN(amount) || Double.isInfinite(amount) || amount <= 0) {
 			return "ERROR|INVALID_AMOUNT|Transfer amount must be positive";
 		}
 		if (fromAccount.trim().equals(toAccount.trim())) {
