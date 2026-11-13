@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
- * Member 1 - Network / Server
+
  * Dedicated worker thread per connected client socket.
  */
 public class Server_Thread extends Thread {
@@ -79,6 +79,7 @@ public class Server_Thread extends Thread {
 			if (loginLogId > 0) {
 				BankingService.recordLogout(loginLogId);
 			}
+			DatabaseManager.closeThreadConnection();
 			synchronized (BankServer.connectedClients) {
 				BankServer.connectedClients.remove(this);
 			}
