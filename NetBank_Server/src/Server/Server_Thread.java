@@ -79,6 +79,7 @@ public class Server_Thread extends Thread {
 			if (loginLogId > 0) {
 				BankingService.recordLogout(loginLogId);
 			}
+			DatabaseManager.closeThreadConnection();
 			synchronized (BankServer.connectedClients) {
 				BankServer.connectedClients.remove(this);
 			}
