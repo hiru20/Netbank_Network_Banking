@@ -24,10 +24,7 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
-/**
- * Member 2 - Banking / Client Application (GUI)
- * Graphical Swing Client that communicates with BankServer over TCP port 6677.
- */
+
 public class BankClientGUI extends JFrame {
 
 	private static final int PORT = 6677;

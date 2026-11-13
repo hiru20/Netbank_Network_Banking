@@ -8,7 +8,7 @@ import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Member 3 - Database / Security & Transaction Manager
+ 
  * Uses fine-grained per-account locks (ordered to prevent deadlocks) and persistent
  * per-thread JDBC connections so concurrent clients on different accounts execute in parallel.
  */

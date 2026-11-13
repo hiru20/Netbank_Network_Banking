@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Member 1 - Network / Server
  * Multi-threaded TCP Socket Server for NetBank (runs on Server Laptop).
  * Uses ExecutorService thread pooling and TCP_NODELAY for low-latency Wi-Fi communication.
  */

@@ -8,11 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-/**
- * Member 2 - Banking / Client Application
- * Console TCP Client for NetBank (runs on Client Laptop).
- * Follows the exact structure of ChatClientT.java & ClientChat.java from EC5205 lecture labs.
- */
+
 public class BankClient {
 
 	static int PORT = 6677;

@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
- * Member 1 - Network / Server
+
  * Dedicated worker thread per connected client socket.
  */
 public class Server_Thread extends Thread {

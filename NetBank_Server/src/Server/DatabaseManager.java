@@ -11,7 +11,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Member 3 - Database & Security
  * Handles MySQL / SQLite JDBC connection reuse (per-thread persistent connection),
  * SQLite WAL mode & indexing for high performance, and SHA-256 password hashing.
  */
