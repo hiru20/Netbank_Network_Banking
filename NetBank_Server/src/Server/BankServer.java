@@ -157,6 +157,49 @@ public class BankServer {
     }
 
     /**
+     * Send a notification to all currently connected clients
+     * logged into the specified account.
+     */
+public static void notifyAccountHolder(
+        String accountNumber,
+        String message) {
+
+    if (accountNumber == null || accountNumber.trim().isEmpty()) {
+        return;
+    }
+
+    synchronized (connectedClients) {
+
+        for (Server_Thread client : connectedClients) {
+
+            if (accountNumber.equals(client.getAccountNumber())
+                    && !"NONE".equals(client.getRole())) {
+
+                client.sendNotification(message);
+            }
+        }
+    }
+}
+
+    /**
+     * Send a notification to all currently connected administrators.
+     */
+    public static void notifyAdmins(String message) {
+
+        synchronized (connectedClients) {
+
+            for (Server_Thread client : connectedClients) {
+
+                if ("ADMIN".equals(client.getRole())) {
+
+                    client.sendNotification(message);
+                }
+            }
+        }
+    }
+
+
+    /**
      * Display available IPv4 addresses.
      */
     private static void displayNetworkAddresses() throws IOException {
