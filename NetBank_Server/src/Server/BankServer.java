@@ -1,112 +1,226 @@
+
 package Server;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.net.NetworkInterface;
-import java.net.Inet4Address;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Multi-threaded TCP Socket Server for NetBank (runs on Server Laptop).
- * Uses ExecutorService thread pooling and TCP_NODELAY for low-latency Wi-Fi communication.
+ * Multi-threaded TCP Socket Server for NetBank.
+ * Uses a bounded thread pool and TCP_NODELAY for low-latency communication.
  */
 public class BankServer {
 
-	private static final int PORT = 6677;
-	public static ArrayList<Server_Thread> connectedClients = new ArrayList<Server_Thread>();
+    private static final int PORT = 6677;
 
-	public static void main(String[] args) throws IOException {
+    private static final int MAX_CLIENT_THREADS = 10;
+    private static final int CLIENT_QUEUE_CAPACITY = 50;
 
-		System.out.println("\t\t NetBank Server");
-		System.out.println("\t\t====================\n");
+    public static ArrayList<Server_Thread> connectedClients =
+            new ArrayList<Server_Thread>();
 
-		// Initialize Database tables and indexes (users, accounts, transactions, login_logs)
-		DatabaseManager.initializeDatabase();
+    public static void main(String[] args) throws IOException {
 
-		displayNetworkAddresses();
-		System.out.println("Listening on Port : " + PORT);
-		System.out.println("Waiting for client connections............\n\n");
+        System.out.println("\t\t NetBank Server");
+        System.out.println("\t\t====================\n");
 
-		ServerSocket serverSocket = new ServerSocket(PORT);
-		serverSocket.setReuseAddress(true);
-		ExecutorService threadPool = Executors.newCachedThreadPool();
-		int current_clients = 1;
+        // Initialize database
+        DatabaseManager.initializeDatabase();
 
-		try {
-			while (true) {
-				// Listening for any client socket requests
-				Socket client = serverSocket.accept();
-				client.setTcpNoDelay(true);
-				client.setKeepAlive(true);
+        displayNetworkAddresses();
 
-				System.out.println("Client " + current_clients + " is Connected from "
-						+ client.getInetAddress().getHostAddress() + "............\n");
+        System.out.println("Listening on Port : " + PORT);
+        System.out.println("Waiting for client connections............\n\n");
 
-				Server_Thread ct = new Server_Thread(client, current_clients);
-				synchronized (connectedClients) {
-					connectedClients.add(ct);
-				}
-				threadPool.execute(ct);
-				current_clients++;
-			}
-		} finally {
-			threadPool.shutdown();
-			serverSocket.close();
-		}
+        // Create and configure the server socket
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.setReuseAddress(true);
+        serverSocket.bind(new InetSocketAddress(PORT));
 
-	}
+        // Create a bounded thread pool
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
+                MAX_CLIENT_THREADS,
+                MAX_CLIENT_THREADS,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<Runnable>(CLIENT_QUEUE_CAPACITY),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
 
-	private static void displayNetworkAddresses() throws IOException {
+        int current_clients = 1;
+
+        try {
+
+            while (true) {
+
+                // Wait for incoming client connections
+                Socket client = serverSocket.accept();
+
+                try {
+
+                    client.setTcpNoDelay(true);
+                    client.setKeepAlive(true);
+
+                    Server_Thread ct =
+                            new Server_Thread(client, current_clients);
+
+                    // Add client to the connected clients list
+                    synchronized (connectedClients) {
+                        connectedClients.add(ct);
+                    }
+
+                    try {
+
+                        // Submit client task to the thread pool
+                        threadPool.execute(ct);
+
+                        System.out.println(
+                                "Client " + current_clients
+                                        + " is Connected from "
+                                        + client.getInetAddress().getHostAddress()
+                                        + "............\n"
+                        );
+
+                        current_clients++;
+
+                    } catch (RejectedExecutionException e) {
+
+                        // Remove rejected client from the active list
+                        synchronized (connectedClients) {
+                            connectedClients.remove(ct);
+                        }
+
+                        client.close();
+
+                        System.out.println(
+                                "[WARNING] Server is busy. Connection rejected from "
+                                        + client.getInetAddress().getHostAddress()
+                        );
+                    }
+
+                } catch (IOException e) {
+
+                    System.err.println(
+                            "[ERROR] Failed to initialize client connection: "
+                                    + e.getMessage()
+                    );
+
+                    try {
+                        client.close();
+                    } catch (IOException closeException) {
+                        System.err.println(
+                                "[ERROR] Failed to close client socket: "
+                                        + closeException.getMessage()
+                        );
+                    }
+                }
+            }
+
+        } finally {
+
+            System.out.println("[INFO] Shutting down NetBank server...");
+
+            // Stop accepting new client tasks
+            threadPool.shutdown();
+
+            try {
+
+                if (!threadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+
+                    System.out.println(
+                            "[WARNING] Some client tasks are still running."
+                    );
+
+                    threadPool.shutdownNow();
+                }
+
+            } catch (InterruptedException e) {
+
+                threadPool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+
+            serverSocket.close();
+
+            System.out.println("[INFO] NetBank server stopped.");
+        }
+    }
+
+    /**
+     * Display available IPv4 addresses.
+     */
+    private static void displayNetworkAddresses() throws IOException {
 
         System.out.println("Available IPv4 Addresses:");
 
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        Enumeration<NetworkInterface> interfaces =
+                NetworkInterface.getNetworkInterfaces();
 
         while (interfaces.hasMoreElements()) {
 
-                NetworkInterface networkInterface = interfaces.nextElement();
+            NetworkInterface networkInterface = interfaces.nextElement();
 
-                if (!networkInterface.isUp() || networkInterface.isLoopback()) {
-                        continue;
+            if (!networkInterface.isUp() || networkInterface.isLoopback()) {
+                continue;
+            }
+
+            Enumeration<InetAddress> addresses =
+                    networkInterface.getInetAddresses();
+
+            while (addresses.hasMoreElements()) {
+
+                InetAddress address = addresses.nextElement();
+
+                if (address instanceof Inet4Address
+                        && !address.isLoopbackAddress()) {
+
+                    System.out.println(
+                            networkInterface.getDisplayName() + " : "
+                                    + address.getHostAddress()
+                    );
                 }
-
-                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
-
-                while (addresses.hasMoreElements()) {
-
-                        InetAddress address = addresses.nextElement();
-
-                        if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
-
-                                System.out.println(
-                                                networkInterface.getDisplayName() + " : "
-                                                                + address.getHostAddress());
-                        }
-                }
+            }
         }
-}
+    }
 
-	public static String getConnectedClientsSummary() {
-		StringBuilder sb = new StringBuilder("ADMIN_CLIENTS_RESPONSE");
-		synchronized (connectedClients) {
-			if (connectedClients.isEmpty()) {
-				sb.append("|No active clients");
-			} else {
-				for (Server_Thread ct : connectedClients) {
-					sb.append("|Client #").append(ct.getClientId())
-							.append(" [IP:").append(ct.getClientIp())
-							.append(" User:").append(ct.getLoggedInUser())
-							.append(" Role:").append(ct.getRole())
-							.append(" Acc:").append(ct.getAccountNumber()).append("]");
-				}
-			}
-		}
-		return sb.toString();
-	}
+    /**
+     * Return information about currently connected clients.
+     */
+    public static String getConnectedClientsSummary() {
 
+        StringBuilder sb =
+                new StringBuilder("ADMIN_CLIENTS_RESPONSE");
+
+        synchronized (connectedClients) {
+
+            if (connectedClients.isEmpty()) {
+
+                sb.append("|No active clients");
+
+            } else {
+
+                for (Server_Thread ct : connectedClients) {
+
+                    sb.append("|Client #").append(ct.getClientId())
+                            .append(" [IP:").append(ct.getClientIp())
+                            .append(" User:").append(ct.getLoggedInUser())
+                            .append(" Role:").append(ct.getRole())
+                            .append(" Acc:").append(ct.getAccountNumber())
+                            .append("]");
+                }
+            }
+        }
+
+        return sb.toString();
+    }
 }
