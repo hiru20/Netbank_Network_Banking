@@ -17,9 +17,13 @@ import java.sql.Statement;
 public class DatabaseManager {
 
 	// MySQL Configuration (XAMPP / MySQL Server)
-	private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/netbank?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-	private static final String MYSQL_USER = "root";
-	private static final String MYSQL_PASSWORD = "";
+    // MySQL Configuration (XAMPP / MySQL Server)
+    private static final String MYSQL_URL = "jdbc:mysql://localhost:3306/netbank?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&cachePrepStmts=true&prepStmtCacheSize=250";
+
+    private static final String MYSQL_USER = "netbank_app";
+
+    private static final String MYSQL_PASSWORD =
+            System.getenv("NETBANK_DB_PASSWORD");
 
 	// Fallback SQLite Database File (used automatically if MySQL Server is not running)
 	private static final String SQLITE_URL = "jdbc:sqlite:data/netbank.sqlite";
@@ -31,6 +35,8 @@ public class DatabaseManager {
 			try {
 				return DriverManager.getConnection(MYSQL_URL, MYSQL_USER, MYSQL_PASSWORD);
 			} catch (SQLException e) {
+				e.printStackTrace();
+				
 				useSqliteFallback = true;
 				System.out.println("MySQL Server not detected on port 3306. Using SQLite Relational Database (data/netbank.sqlite).\n");
 			}
