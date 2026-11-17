@@ -7,6 +7,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.net.NetworkInterface;
+import java.net.Inet4Address;
+import java.util.Enumeration;
 
 /**
  * Multi-threaded TCP Socket Server for NetBank (runs on Server Laptop).
@@ -25,8 +28,7 @@ public class BankServer {
 		// Initialize Database tables and indexes (users, accounts, transactions, login_logs)
 		DatabaseManager.initializeDatabase();
 
-		InetAddress localIp = InetAddress.getLocalHost();
-		System.out.println("Server IP Address : " + localIp.getHostAddress());
+		displayNetworkAddresses();
 		System.out.println("Listening on Port : " + PORT);
 		System.out.println("Waiting for client connections............\n\n");
 
@@ -58,6 +60,36 @@ public class BankServer {
 		}
 
 	}
+
+	private static void displayNetworkAddresses() throws IOException {
+
+        System.out.println("Available IPv4 Addresses:");
+
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+        while (interfaces.hasMoreElements()) {
+
+                NetworkInterface networkInterface = interfaces.nextElement();
+
+                if (!networkInterface.isUp() || networkInterface.isLoopback()) {
+                        continue;
+                }
+
+                Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+
+                while (addresses.hasMoreElements()) {
+
+                        InetAddress address = addresses.nextElement();
+
+                        if (address instanceof Inet4Address && !address.isLoopbackAddress()) {
+
+                                System.out.println(
+                                                networkInterface.getDisplayName() + " : "
+                                                                + address.getHostAddress());
+                        }
+                }
+        }
+}
 
 	public static String getConnectedClientsSummary() {
 		StringBuilder sb = new StringBuilder("ADMIN_CLIENTS_RESPONSE");
