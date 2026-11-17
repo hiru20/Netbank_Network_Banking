@@ -8,11 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-/**
- * Member 2 - Banking / Client Application
- * Console TCP Client for NetBank (runs on Client Laptop).
- * Follows the exact structure of ChatClientT.java & ClientChat.java from EC5205 lecture labs.
- */
+
 public class BankClient {
 
 	static int PORT = 6677;
@@ -37,8 +33,10 @@ public class BankClient {
 			ipAddress = InetAddress.getByName(hostInput);
 		}
 
-		// Creating Client Socket
+		// Creating Client Socket with TCP_NODELAY for low-latency Wi-Fi communication
 		Socket socket = new Socket(ipAddress, PORT);
+		socket.setTcpNoDelay(true);
+		socket.setKeepAlive(true);
 		System.out.println("Server is connected....\n");
 
 		PrintWriter out = new PrintWriter(socket.getOutputStream(), true);

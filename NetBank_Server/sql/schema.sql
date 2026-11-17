@@ -1,7 +1,6 @@
 -- ============================================================================
 -- NetBank Relational Database Schema (MySQL 8.0+)
--- Module: EC5205 - Operating Systems & Network Programming
--- Member 3 - Database & Security Module
+
 -- ============================================================================
 
 CREATE DATABASE IF NOT EXISTS netbank

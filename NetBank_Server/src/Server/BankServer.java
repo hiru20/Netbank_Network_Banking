@@ -5,10 +5,12 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * Member 1 - Network / Server
  * Multi-threaded TCP Socket Server for NetBank (runs on Server Laptop).
+ * Uses ExecutorService thread pooling and TCP_NODELAY for low-latency Wi-Fi communication.
  */
 public class BankServer {
 
@@ -20,7 +22,7 @@ public class BankServer {
 		System.out.println("\t\t NetBank Server");
 		System.out.println("\t\t====================\n");
 
-		// Initialize Database tables (users, accounts, transactions, login_logs)
+		// Initialize Database tables and indexes (users, accounts, transactions, login_logs)
 		DatabaseManager.initializeDatabase();
 
 		InetAddress localIp = InetAddress.getLocalHost();
@@ -29,12 +31,17 @@ public class BankServer {
 		System.out.println("Waiting for client connections............\n\n");
 
 		ServerSocket serverSocket = new ServerSocket(PORT);
+		serverSocket.setReuseAddress(true);
+		ExecutorService threadPool = Executors.newCachedThreadPool();
 		int current_clients = 1;
 
 		try {
 			while (true) {
 				// Listening for any client socket requests
 				Socket client = serverSocket.accept();
+				client.setTcpNoDelay(true);
+				client.setKeepAlive(true);
+
 				System.out.println("Client " + current_clients + " is Connected from "
 						+ client.getInetAddress().getHostAddress() + "............\n");
 
@@ -42,10 +49,11 @@ public class BankServer {
 				synchronized (connectedClients) {
 					connectedClients.add(ct);
 				}
-				ct.start();
+				threadPool.execute(ct);
 				current_clients++;
 			}
 		} finally {
+			threadPool.shutdown();
 			serverSocket.close();
 		}
 
@@ -70,4 +78,3 @@ public class BankServer {
 	}
 
 }
-

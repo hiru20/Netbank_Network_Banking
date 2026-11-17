@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
- * Member 1 - Network / Server
+
  * Dedicated worker thread per connected client socket.
  */
 public class Server_Thread extends Thread {
@@ -79,6 +79,7 @@ public class Server_Thread extends Thread {
 			if (loginLogId > 0) {
 				BankingService.recordLogout(loginLogId);
 			}
+			DatabaseManager.closeThreadConnection();
 			synchronized (BankServer.connectedClients) {
 				BankServer.connectedClients.remove(this);
 			}
@@ -115,6 +116,9 @@ public class Server_Thread extends Thread {
 				if (parts.length < 3) {
 					return "ERROR|INVALID_FORMAT|Usage: LOGIN|username|password";
 				}
+				if (!"NONE".equals(this.role)) {
+					return "ERROR|ALREADY_AUTHENTICATED|Please logout before logging in again";
+				}
 				String loginResult = BankingService.login(parts[1], parts[2], getClientIp());
 				if (loginResult.startsWith("LOGIN_SUCCESS|")) {
 					String[] resParts = loginResult.split("\\|");
@@ -132,6 +136,9 @@ public class Server_Thread extends Thread {
 					return "ERROR|UNAUTHORIZED|Please login first";
 				}
 				String balAcc = (parts.length >= 2 && !parts[1].isEmpty()) ? parts[1] : this.accountNumber;
+				if (!isAuthorizedAccount(balAcc)) {
+					return "ERROR|UNAUTHORIZED|You can only access your own account";
+				}
 				return BankingService.getBalance(balAcc);
 
 			case "DEPOSIT":
@@ -141,6 +148,9 @@ public class Server_Thread extends Thread {
 				}
 				if (parts.length < 3) {
 					return "ERROR|INVALID_FORMAT|Usage: DEPOSIT|accountNumber|amount";
+				}
+				if (!isAuthorizedAccount(parts[1])) {
+					return "ERROR|UNAUTHORIZED|You can only access your own account";
 				}
 				return BankingService.deposit(parts[1], Double.parseDouble(parts[2]));
 
@@ -152,6 +162,9 @@ public class Server_Thread extends Thread {
 				if (parts.length < 3) {
 					return "ERROR|INVALID_FORMAT|Usage: WITHDRAW|accountNumber|amount";
 				}
+				if (!isAuthorizedAccount(parts[1])) {
+					return "ERROR|UNAUTHORIZED|You can only access your own account";
+				}
 				return BankingService.withdraw(parts[1], Double.parseDouble(parts[2]));
 
 			case "TRANSFER":
@@ -162,6 +175,9 @@ public class Server_Thread extends Thread {
 				if (parts.length < 4) {
 					return "ERROR|INVALID_FORMAT|Usage: TRANSFER|fromAccount|toAccount|amount";
 				}
+				if (!isAuthorizedAccount(parts[1])) {
+					return "ERROR|UNAUTHORIZED|You can only transfer from your own account";
+				}
 				return BankingService.transfer(parts[1], parts[2], Double.parseDouble(parts[3]));
 
 			case "HISTORY":
@@ -170,6 +186,9 @@ public class Server_Thread extends Thread {
 					return "ERROR|UNAUTHORIZED|Please login first";
 				}
 				String histAcc = (parts.length >= 2 && !parts[1].isEmpty()) ? parts[1] : this.accountNumber;
+				if (!isAuthorizedAccount(histAcc)) {
+					return "ERROR|UNAUTHORIZED|You can only access your own account";
+				}
 				return BankingService.getTransactionHistory(histAcc);
 
 			case "ADMIN_ACCOUNTS":
@@ -215,6 +234,11 @@ public class Server_Thread extends Thread {
 		} catch (Exception e) {
 			return "ERROR|SERVER_ERROR|" + e.getMessage();
 		}
+	}
+
+	private boolean isAuthorizedAccount(String requestedAccount) {
+		return "ADMIN".equals(this.role)
+				|| (requestedAccount != null && requestedAccount.trim().equals(this.accountNumber));
 	}
 
 }
