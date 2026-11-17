@@ -12,3 +12,5 @@ data/
 .settings/
 .vscode/
 .idea/
+
+/out/
